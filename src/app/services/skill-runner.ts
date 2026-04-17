@@ -44,11 +44,19 @@ export function buildToolPrompt(): string {
 
 ${toolDescriptions}
 
+If the user's request matches a tool, output a JSON object like this:
+{
+  "tool": "get_current_weather",
+  "arguments": { "location": "London", "unit": "celsius" }
+}
+
+If no tool matches, output:
+{ "tool": "none" }
+
 RULES:
-1. If the user's request matches a tool, output ONLY the JSON for that tool.
-2. If the request doesn't match a tool, output ONLY: {"tool": "none"}
-3. DO NOT answer the user's question yourself. 
-4. DO NOT provide any text other than the JSON object.`;
+1. ONLY output the JSON object. 
+2. DO NOT explain your reasoning.
+3. DO NOT answer the question yourself.`;
 }
 
 /**
@@ -119,13 +127,15 @@ export async function runToolAgent(engine: any, userMessage: string): Promise<{ 
 
   const messages = [
     { role: 'system', content: buildToolPrompt() },
+    { role: 'user', content: 'What is the weather in Paris?' },
+    { role: 'assistant', content: '{"tool": "get_current_weather", "arguments": {"location": "Paris", "unit": "celsius"}}' },
     { role: 'user', content: userMessage },
   ];
 
   const response = await engine.chat.completions.create({
     messages,
     temperature: 0.0,
-    max_tokens: 60,
+    max_tokens: 100,
     presence_penalty: 0.3,
     frequency_penalty: 0.3,
   });
