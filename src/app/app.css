@@ -35,25 +35,18 @@
   opacity: 0.85;
 }
 
-.logo-icon {
-  font-size: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, var(--accent), #a78bfa);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-glow);
+.header-logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 4px var(--accent-glow));
 }
 
 .logo h1 {
   font-size: 20px;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--text-primary), var(--accent-hover));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
+  margin: 0;
 }
 
 .badge {
