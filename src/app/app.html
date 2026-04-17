@@ -11,7 +11,7 @@
           <div class="status-item" [class.ready]="llmReady()" [class.loading]="llmLoading()"
             [class.unavailable]="!webGPUSupported()">
             <span class="status-dot"></span>
-            <span class="status-label">LLM</span>
+            <span class="status-label">{{ getModelShortName() }}</span>
           </div>
         </div>
         <button class="settings-btn" (click)="showSettings.set(true)" title="Settings">⚙️</button>

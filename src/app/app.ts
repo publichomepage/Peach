@@ -299,6 +299,10 @@ export class App implements OnInit, AfterViewChecked {
     this.query.set('');
   }
 
+  getModelShortName(): string {
+    return this.llmService.selectedModelId().split('-')[0] || 'LLM';
+  }
+
   goHome() {
     this.showSettings.set(false);
     this.clearChat();
