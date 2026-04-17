@@ -36,6 +36,16 @@ A high-performance, private, and **zero-cost** RAG (Retrieval-Augmented Generati
     Open [http://localhost:4200](http://localhost:4200) in your browser.
     *Note: A WebGPU-enabled browser (like Chrome 113+) is required for on-device LLM inference.*
 
+## 🚀 Deployment
+
+To deploy to GitHub Pages:
+
+```bash
+npm run deploy
+```
+
+This will build the project with the correct base-href (`/zero-rag/`) and push the `dist/slm/browser` folder to the `gh-pages` branch.
+
 ## 🔒 Privacy First
 
 *   **Local Inference**: Your questions and the LLM's answers are processed entirely on your machine via WebGPU.

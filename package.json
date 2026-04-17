@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "deploy": "ng build --base-href /zero-rag/ && npx angular-cli-ghpages --dir=dist/slm/browser"
   },
   "private": true,
   "packageManager": "npm@10.9.2",
