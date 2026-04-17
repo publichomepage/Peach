@@ -1,4 +1,4 @@
-# ⚡ Zero-RAG
+# ⚡ Peach
 
 A high-performance, private, and **zero-cost** RAG (Retrieval-Augmented Generation) engine that runs entirely in your browser.
 
