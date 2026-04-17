@@ -59,7 +59,8 @@
                 "input": "content",
                 "output": "/content"
               },
-              "src/favicon.png"
+              "src/favicon.png",
+              "src/.nojekyll"
             ],
             "styles": ["src/styles.css"],
             "allowedCommonJsDependencies": ["url"]
