@@ -423,7 +423,7 @@ export class App implements OnInit, AfterViewChecked {
             'Content-Type': 'application/json',
             // Required by OpenRouter and others for browser-based requests
             'HTTP-Referer': window.location.origin,
-            'X-Title': 'Zero-RAG Knowledge Bank'
+            'X-Title': 'Peach Knowledge Bank'
           },
           body: JSON.stringify({
             model: this.openaiModel() || 'gpt-4.1-nano',
