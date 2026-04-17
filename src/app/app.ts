@@ -1,4 +1,5 @@
 import { Component, signal, computed, OnInit, ElementRef, ViewChild, AfterViewChecked } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { SearchService, SearchResult } from './services/search.service';
 import { EmbeddingService } from './services/embedding.service';
@@ -14,7 +15,8 @@ interface Message {
 
 @Component({
   selector: 'app-root',
-  imports: [FormsModule],
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -27,7 +29,6 @@ export class App implements OnInit, AfterViewChecked {
   isKnowledgeMode = signal(false);
   githubToken = signal('');
   githubRepo = signal('');
-  openaiRepo = signal(''); // Adding this if needed? No, just keep what we have
   openaiKey = signal('');
   openaiBaseUrl = signal('https://api.openai.com');
   openaiModel = signal('');
