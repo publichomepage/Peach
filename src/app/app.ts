@@ -388,13 +388,19 @@ export class App implements OnInit, AfterViewChecked {
       } else if (this.openaiKey()) {
         // Use OpenAI API for formatting
         let baseUrl = this.openaiBaseUrl().trim().replace(/\/+$/, '');
-        // OpenRouter needs /api/v1 instead of just /v1
-        let url = `${baseUrl}/v1/chat/completions`;
-        if (baseUrl.includes('openrouter.ai') && !baseUrl.includes('/api')) {
-          url = `${baseUrl}/api/v1/chat/completions`;
+        let url = '';
+
+        if (baseUrl.includes('chat/completions')) {
+          url = baseUrl;
+        } else if (baseUrl.includes('openrouter.ai')) {
+          // OpenRouter standard
+          url = baseUrl.includes('/api/v1') ? `${baseUrl}/chat/completions` : `${baseUrl}/api/v1/chat/completions`;
+        } else {
+          // General OpenAI standard (OpenAI, Mistral, Groq, etc.)
+          url = baseUrl.includes('/v1') ? `${baseUrl}/chat/completions` : `${baseUrl}/v1/chat/completions`;
         }
 
-        const oaiRes = await fetch(url, {
+        const oaiRes = await fetch(url.replace(/([^:])\/\//g, '$1/'), {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${this.openaiKey()}`,
