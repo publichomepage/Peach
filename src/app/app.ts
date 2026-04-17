@@ -309,11 +309,16 @@ export class App implements OnInit, AfterViewChecked {
   }
 
   openSource(source: string) {
-    const repo = this.githubRepo();
+    let repo = this.githubRepo().trim();
+    if (repo.endsWith('/')) repo = repo.slice(0, -1);
+
     if (repo) {
-      window.open(`https://github.com/${repo}/blob/main/docs/${source}`, '_blank');
+      // If source already has 'docs/' at the start, don't add it again
+      const path = source.startsWith('docs/') ? source : `docs/${source}`;
+      window.open(`https://github.com/${repo}/blob/main/${path}`, '_blank');
     } else {
-      window.open(`/docs/${source}`, '_blank');
+      const path = source.startsWith('docs/') ? source : `/docs/${source}`;
+      window.open(path, '_blank');
     }
   }
 
