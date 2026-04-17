@@ -38,11 +38,8 @@ A high-performance, private, and **zero-cost** RAG (Retrieval-Augmented Generati
 
 ## 🔒 Privacy First
 
-While the public documentation and search indices are hosted on GitHub, **your interactions are 100% private**:
-
 *   **Local Inference**: Your questions and the LLM's answers are processed entirely on your machine via WebGPU.
 *   **No Tracking**: No user data, queries, or chat history are ever sent to a server.
-*   **Static Hosting**: GitHub only serves the static website assets and the pre-built index; it never sees your personal data.
 
 ---
 License: MIT
