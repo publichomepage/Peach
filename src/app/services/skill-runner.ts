@@ -54,9 +54,10 @@ If no tool matches, output:
 { "tool": "none" }
 
 RULES:
-1. ONLY output the JSON object. 
-2. DO NOT explain your reasoning.
-3. DO NOT answer the question yourself.`;
+1. Output ONLY the JSON object.
+2. DO NOT use <think> tags or internal thought processes.
+3. DO NOT explain your reasoning.
+4. DO NOT answer the question yourself.`;
 }
 
 /**
@@ -64,9 +65,11 @@ RULES:
  */
 export function parseToolCall(content: string): { tool: string; arguments: Record<string, string> } | null {
   try {
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
+    // Find the last valid-looking JSON object in the string (in case of <think> preamble)
+    const matches = content.match(/\{[\s\S]*\}/g);
+    if (matches) {
+      const lastMatch = matches[matches.length - 1];
+      const parsed = JSON.parse(lastMatch);
       if (parsed.tool && parsed.tool !== 'none' && parsed.tool.trim().length > 0) {
         return { tool: parsed.tool, arguments: parsed.arguments || {} };
       }
@@ -137,7 +140,7 @@ export async function runToolAgent(engine: any, userMessage: string): Promise<{ 
   const response = await engine.chat.completions.create({
     messages,
     temperature: 0.0,
-    max_tokens: 100,
+    max_tokens: 256, // Allow space for thinking models to reach the JSON
     presence_penalty: 0.3,
     frequency_penalty: 0.3,
   });
