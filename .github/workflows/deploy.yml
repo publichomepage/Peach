@@ -37,6 +37,15 @@ jobs:
       - name: Find Build Output
         run: find dist/SLM/browser -maxdepth 3
 
+      - name: Force Copy Assets
+        run: |
+          mkdir -p dist/SLM/browser/skills
+          mkdir -p dist/SLM/browser/index
+          cp -r public/skills/* dist/SLM/browser/skills/ || true
+          cp -r public/index/* dist/SLM/browser/index/ || true
+          cp src/.nojekyll dist/SLM/browser/ || true
+          cp src/favicon.png dist/SLM/browser/ || true
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
