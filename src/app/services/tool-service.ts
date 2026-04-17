@@ -54,9 +54,9 @@ If no tool matches, output:
 { "tool": "none" }
 
 RULES:
-1. Output ONLY the JSON object.
-2. DO NOT use <think> tags or internal thought processes.
-3. DO NOT explain your reasoning.
+1. ONLY trigger a tool if the question is specifically about that tool's capability (e.g. weather).
+2. For ANY other question (auth, databases, general info), output ONLY: {"tool": "none"}
+3. DO NOT use <think> tags.
 4. DO NOT answer the question yourself.`;
 }
 
@@ -134,6 +134,8 @@ export async function runToolAgent(engine: any, userMessage: string): Promise<{ 
     { role: 'system', content: buildToolPrompt() },
     { role: 'user', content: 'What is the weather in Paris?' },
     { role: 'assistant', content: '{"tool": "get_current_weather", "arguments": {"location": "Paris", "unit": "celsius"}}' },
+    { role: 'user', content: 'How do I set up authentication?' },
+    { role: 'assistant', content: '{"tool": "none"}' },
     { role: 'user', content: userMessage },
   ];
 
