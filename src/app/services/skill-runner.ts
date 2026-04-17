@@ -1,17 +1,8 @@
 /**
- * Skill Runner — loads skill definitions from .skill.md files
- * and executes them based on LLM tool-call output.
- * 
- * Architecture (inspired by OpenClaw agents):
- * 1. Skills are defined declaratively in markdown files
- * 2. The runner builds a system prompt listing available skills
- * 3. The LLM outputs JSON to invoke a skill
- * 4. The runner executes the skill (makes the API call)
- * 5. Returns formatted result
+ * Tool Runner — manages internal tool definitions and execution.
  */
 
-// Skill definition parsed from .skill.md
-export interface Skill {
+export interface Tool {
   name: string;
   description: string;
   arguments: { name: string; type: string; description: string }[];
@@ -19,142 +10,91 @@ export interface Skill {
   responseMapping: Record<string, string>;
 }
 
-// Dynamic skill registry
-export const SKILLS: Skill[] = [];
-
-/**
- * Parses a skill defined in markdown format.
- */
-export function parseSkillMarkdown(md: string): Skill {
-  const skill: Partial<Skill> = { arguments: [], responseMapping: {}, api: { endpoint: '', method: '' } };
-
-  const nameMatch = md.match(/name:\s*(.+)/);
-  const descMatch = md.match(/description:\s*(.+)/);
-  if (nameMatch) skill.name = nameMatch[1].trim();
-  if (descMatch) skill.description = descMatch[1].trim();
-
-  const argsSection = md.match(/## Arguments([\s\S]*?)##/);
-  if (argsSection) {
-    const argLines = argsSection[1].split('\n').filter(l => l.trim().startsWith('-'));
-    for (const line of argLines) {
-      const match = line.match(/-\s*(\w+):\s*(\w+)\s*\((.*)\)/);
-      if (match) {
-        skill.arguments!.push({ name: match[1], type: match[2], description: match[3] });
-      }
+// Hardcoded internal tools
+export const TOOLS: Tool[] = [
+  {
+    name: 'get_current_weather',
+    description: 'Get the current weather in a given location',
+    arguments: [
+      { name: 'location', type: 'string', description: 'city name, e.g. "London"' },
+      { name: 'unit', type: 'string', description: '"celsius" or "fahrenheit"' }
+    ],
+    api: {
+      endpoint: 'https://wttr.in/{location}?format=j1',
+      method: 'GET'
+    },
+    responseMapping: {
+      'Temperature (C)': 'current_condition[0].temp_C',
+      'Condition': 'current_condition[0].weatherDesc[0].value',
+      'Humidity': 'current_condition[0].humidity'
     }
   }
-
-  const apiSection = md.match(/## API([\s\S]*?)##/);
-  if (apiSection) {
-    const endpointMatch = apiSection[1].match(/Endpoint:\s*(.+)/);
-    const methodMatch = apiSection[1].match(/Method:\s*(.+)/);
-    if (endpointMatch) skill.api!.endpoint = endpointMatch[1].trim();
-    if (methodMatch) skill.api!.method = methodMatch[1].trim();
-  }
-
-  const mapSection = md.match(/## Response Mapping([\s\S]*)$/);
-  if (mapSection) {
-    const mapLines = mapSection[1].split('\n').filter(l => l.trim().includes(':'));
-    for (const line of mapLines) {
-      const [key, val] = line.split(':').map(s => s.trim());
-      if (key && val) {
-        skill.responseMapping![key] = val;
-      }
-    }
-  }
-
-  return skill as Skill;
-}
+];
 
 /**
- * Fetches and loads skill definitions into the registry.
+ * Build a system prompt that tells the LLM about available tools.
  */
-export async function loadSkillsFromUrls(urls: string[]): Promise<void> {
-  SKILLS.length = 0; // Clear existing
-  for (const url of urls) {
-    try {
-      const res = await fetch(url);
-      const text = await res.text();
-      const parsed = parseSkillMarkdown(text);
-      if (parsed.name) {
-        SKILLS.push(parsed);
-        console.log(`✅ Loaded skill: ${parsed.name}`);
-      }
-    } catch (e) {
-      console.error(`❌ Failed to load skill from ${url}`, e);
-    }
-  }
-}
-
-/**
- * Build a system prompt that tells the LLM about all available skills.
- */
-export function buildSkillPrompt(isLlama: boolean = false): string {
-  const skillDescriptions = SKILLS.map(skill => {
-    const args = skill.arguments.map(a => `  - ${a.name}: ${a.type} (${a.description})`).join('\n');
-    return `Skill: ${skill.name}\nDescription: ${skill.description}\nArguments:\n${args}`;
+export function buildToolPrompt(): string {
+  const toolDescriptions = TOOLS.map(tool => {
+    const args = tool.arguments.map(a => `  - ${a.name}: ${a.type} (${a.description})`).join('\n');
+    return `Tool: ${tool.name}\nDescription: ${tool.description}\nArguments:\n${args}`;
   }).join('\n\n');
 
-  if (isLlama || true) {
-    return `You are a function-calling coordinator. You have access to the following skills:
+  return `You are a function-calling coordinator. You have access to the following service tools:
 
-${skillDescriptions}
+${toolDescriptions}
 
 RULES:
-1. If the user's request matches a skill, output ONLY the JSON for that skill.
-2. If the request is a general question or doesn't match a skill, output ONLY: {"skill": "none"}
+1. If the user's request matches a tool, output ONLY the JSON for that tool.
+2. If the request doesn't match a tool, output ONLY: {"tool": "none"}
 3. DO NOT answer the user's question yourself. 
 4. DO NOT provide any text other than the JSON object.`;
-  }
 }
 
 /**
- * Parse LLM output to extract a skill invocation.
+ * Parse LLM output to extract a tool invocation.
  */
-export function parseSkillCall(content: string): { skill: string; arguments: Record<string, string> } | null {
+export function parseToolCall(content: string): { tool: string; arguments: Record<string, string> } | null {
   try {
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
-      if (parsed.skill && parsed.skill !== 'none' && parsed.skill.trim().length > 0) {
-        return { skill: parsed.skill, arguments: parsed.arguments || {} };
+      if (parsed.tool && parsed.tool !== 'none' && parsed.tool.trim().length > 0) {
+        return { tool: parsed.tool, arguments: parsed.arguments || {} };
+      }
+      // Backward compatibility for old "skill" key (if model keeps hallucinating it)
+      if (parsed.skill && parsed.skill !== 'none') {
+        return { tool: parsed.skill, arguments: parsed.arguments || {} };
       }
     }
-  } catch {
-    // Not valid JSON
-  }
+  } catch { }
   return null;
 }
 
 /**
- * Execute a skill by name with the given arguments.
- * Makes the actual API call and extracts the response.
+ * Execute a tool by name.
  */
-export async function executeSkill(
-  skillName: string,
+export async function executeTool(
+  toolName: string,
   args: Record<string, string>
 ): Promise<{ success: boolean; data?: Record<string, any>; error?: string }> {
-  // Enforce exact match to prevent small models from hallucinating false positives
-  const skill = SKILLS.find(s => s.name.toLowerCase() === skillName.toLowerCase());
+  const tool = TOOLS.find(t => t.name.toLowerCase() === toolName.toLowerCase());
 
-  if (!skill) {
-    return { success: false, error: `Unknown skill: ${skillName}. Available: ${SKILLS.map(s => s.name).join(', ')}` };
+  if (!tool) {
+    return { success: false, error: `Unknown tool: ${toolName}` };
   }
 
-  // Build the URL by replacing {arg} placeholders
-  let url = skill.api.endpoint;
+  let url = tool.api.endpoint;
   for (const [key, value] of Object.entries(args)) {
     url = url.replace(`{${key}}`, encodeURIComponent(value));
   }
-
 
   try {
     const res = await fetch(url);
     const json = await res.json();
 
-    // Extract mapped fields from the response
     const data: Record<string, any> = {};
-    for (const [key, path] of Object.entries(skill.responseMapping)) {
+    for (const [key, path] of Object.entries(tool.responseMapping)) {
       data[key] = resolvePath(json, path);
     }
 
@@ -164,9 +104,6 @@ export async function executeSkill(
   }
 }
 
-/**
- * Resolve a dot/bracket path like "current_condition[0].temp_C" on an object.
- */
 function resolvePath(obj: any, path: string): any {
   const parts = path.replace(/\[(\d+)\]/g, '.$1').split('.');
   let current = obj;
@@ -177,47 +114,38 @@ function resolvePath(obj: any, path: string): any {
   return current;
 }
 
-/**
- * Run the full skill pipeline: LLM → parse → execute → format result.
- */
-export async function runSkillAgent(engine: any, userMessage: string, isLlama: boolean = false): Promise<{ wasSkillUsed: boolean, result: string }> {
-  if (!engine) return { wasSkillUsed: false, result: 'LLM Engine not loaded.' };
+export async function runToolAgent(engine: any, userMessage: string): Promise<{ wasToolUsed: boolean, result: string }> {
+  if (!engine) return { wasToolUsed: false, result: '' };
 
   const messages = [
-    { role: 'system', content: buildSkillPrompt(isLlama) },
+    { role: 'system', content: buildToolPrompt() },
     { role: 'user', content: userMessage },
   ];
 
-  // Step 1: Ask LLM which skill to use
   const response = await engine.chat.completions.create({
     messages,
-    temperature: isLlama ? 0.0 : 0.1,
-    max_tokens: 60, // Routing should be very short
+    temperature: 0.0,
+    max_tokens: 60,
     presence_penalty: 0.3,
     frequency_penalty: 0.3,
   });
 
   const content = response.choices[0]?.message?.content?.trim() || '';
-
-  // Step 2: Parse the skill call
-  const skillCall = parseSkillCall(content);
-  if (!skillCall) {
-    return { wasSkillUsed: false, result: '' };
+  const toolCall = parseToolCall(content);
+  
+  if (!toolCall) {
+    return { wasToolUsed: false, result: '' };
   }
 
-  // Step 3: Execute the skill
-  const result = await executeSkill(skillCall.skill, skillCall.arguments);
+  const result = await executeTool(toolCall.tool, toolCall.arguments);
 
   if (!result.success) {
-    return { wasSkillUsed: true, result: `**❌ Skill failed:** ${result.error}` };
+    return { wasToolUsed: true, result: `**❌ Error:** ${result.error}` };
   }
 
-  // Step 4: Format the result dynamically
   const formattedLines = Object.entries(result.data!).map(([k, v]) => `**${k}**: ${v}`);
-  const resultMarkdown = formattedLines.join('\n');
-
   return {
-    wasSkillUsed: true,
-    result: resultMarkdown
+    wasToolUsed: true,
+    result: formattedLines.join('\n')
   };
 }

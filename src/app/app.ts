@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { SearchService, SearchResult } from './services/search.service';
 import { EmbeddingService } from './services/embedding.service';
 import { LlmService, SUPPORTED_MODELS } from './services/llm.service';
-import { runSkillAgent, loadSkillsFromUrls } from './services/skill-runner';
+import { runToolAgent } from './services/skill-runner';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -94,8 +94,7 @@ export class App implements OnInit, AfterViewChecked {
     // Load search index, embedding model, and skills in parallel
     await Promise.all([
       this.searchService.loadIndex(),
-      this.embeddingService.loadModel(),
-      loadSkillsFromUrls(['./skills/weather.skill.md'])
+      this.embeddingService.loadModel()
     ]);
 
     // Start loading LLM in the background (non-blocking)
@@ -158,10 +157,9 @@ export class App implements OnInit, AfterViewChecked {
       if (this.llmService.isLoaded()) {
         // Quick pass: check if this matches any available skill
         const engine = this.llmService.getEngine();
-        const isLlama = this.llmService.selectedModelId().toLowerCase().includes('llama');
-        const skillCheck = await runSkillAgent(engine, q, isLlama);
+        const skillCheck = await runToolAgent(engine, q);
 
-        if (skillCheck.wasSkillUsed) {
+        if (skillCheck.wasToolUsed) {
           console.log('✅ Chat query intercepted by Skill Agent');
           this.messages.update(msgs => {
             return [
@@ -277,8 +275,7 @@ export class App implements OnInit, AfterViewChecked {
 
     try {
       const engine = this.llmService.getEngine();
-      const isLlama = this.llmService.selectedModelId().toLowerCase().includes('llama');
-      const result = await runSkillAgent(engine, question, isLlama);
+      const result = await runToolAgent(engine, question);
 
       this.messages.update(msgs => {
         const updated = [...msgs];
