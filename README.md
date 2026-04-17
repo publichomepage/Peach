@@ -33,6 +33,8 @@ A high-performance, private, and **zero-cost** RAG (Retrieval-Augmented Generati
     ```bash
     npm start
     ```
+    Open [http://localhost:4200](http://localhost:4200) in your browser.
+    *Note: A WebGPU-enabled browser (like Chrome 113+) is required for on-device LLM inference.*
 
 ## 🔒 Privacy First
 
