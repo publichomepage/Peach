@@ -317,7 +317,7 @@ export class App implements OnInit, AfterViewChecked {
     const path = source.startsWith('docs/') ? source : `docs/${source}`;
     
     // Always open on GitHub
-    const githubUrl = `https://github.com/${repo}/blob/main/${path}`;
+    const githubUrl = `https://github.com/${repo}/tree/main/${path}`;
     window.open(githubUrl, '_blank');
   }
 
