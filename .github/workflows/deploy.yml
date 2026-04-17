@@ -34,8 +34,11 @@ jobs:
       - name: Build Angular App
         run: npx ng build --base-href /zero-rag/
 
+      - name: Find Build Output
+        run: ls -R dist
+
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: dist/slm/browser
+          folder: dist/SLM/browser
           branch: gh-pages
